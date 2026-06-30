@@ -1,4 +1,4 @@
-export class TMCanvasClient{
+class TMCanvasClient{
     welcome(){
         console.log("Welcome to the TM Canvas Client");
     }
