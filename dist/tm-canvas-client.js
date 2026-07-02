@@ -1,12 +1,37 @@
+/**
+ * A client for interacting with the Canvas LMS REST API for a specific course.
+ * Reads the course ID from the global ENV object and handles paginated
+ * responses automatically.
+ */
+
 class TMCanvasClient {
+
+    /**
+    * Creates a new TMCanvasClient bound to the current Canvas course context.
+    */
     constructor() {
         this.COURSE_ID = ENV.current_context.id;
         this.BASE_URL = "https://uia.instructure.com/api/v1";
     }
+
+    /**
+    * Logs a welcome message to the console.
+    */
     welcome() {
         console.log("Welcome to the TM Canvas Client");
     }
 
+    /**
+     * Recursively fetches all modules for the course, following Canvas'
+     * paginated "next" links until no more pages remain.
+     *
+     * @param {string} [url=''] - The URL to fetch. Defaults to the course's
+     *   modules endpoint; used internally for recursive pagination calls.
+     * @param {Array<Object>} [modules=[]] - Accumulator of modules gathered
+     *   so far across recursive calls.
+     * @returns {Promise<Array<Object>>} Resolves with the full list of modules,
+     *   or undefined if a request fails.
+     */
     async listModules(url = '', modules = []) {
         try {
             if (url === '') {
@@ -26,6 +51,17 @@ class TMCanvasClient {
         }
     }
 
+    /**
+    * Recursively fetches all pages for the course, following Canvas'
+    * paginated "next" links until no more pages remain.
+    *
+    * @param {string} [url=''] - The URL to fetch. Defaults to the course's
+    *   modules endpoint; used internally for recursive pagination calls.
+    * @param {Array<Object>} [pages=[]] - Accumulator of pages gathered
+    *   so far across recursive calls.
+    * @returns {Promise<Array<Object>>} Resolves with the full list of modules,
+    *   or undefined if a request fails.
+    */
     async listPages(url = '', pages = []) {
         try {
             if (url === '') {
@@ -47,6 +83,13 @@ class TMCanvasClient {
         }
     }
 
+    /**
+     * Fetches a course module and the module's items and, for any items of type "Page",
+     * retrieves the full page content and attaches it as `_page_info`.
+     *
+     * @returns {Promise<Array<Object>>} Modules, each augmented with a
+     *   `_module_items` array; page items include `_page_info`.
+    */
     async listModulesWithItemsAndPageContent() {
         const modules = await this.listModules();
 
@@ -59,7 +102,7 @@ class TMCanvasClient {
                     if (page) {
                         item._page_info = page;
                     } else {
-                        item._page_info = {};
+                        item._page_info = null;
                     }
                 }
             }
@@ -71,6 +114,13 @@ class TMCanvasClient {
 
     }
 
+    /**
+     * Fetches a single page.
+     * 
+     * @param {string} url - The url for the page to fetch.
+     * @returns {Promise<Object>} - Resolves with a Page object which includes the page body 
+     * since this only fetches a single page.
+     */
     async getPage(url) {
         try {
             const res = await fetch(url);
@@ -81,6 +131,16 @@ class TMCanvasClient {
         }
     }
 
+    /**
+     * Recursively fetches all items for a module, following Canvas'
+     * paginated "next" links until no more pages remain.
+     *
+     * @param {string} [url=''] - The URL to fetch a specific module.
+     * @param {Array<Object>} [items=[]] - Accumulator of items gathered
+     *   so far across recursive calls.
+     * @returns {Promise<Array<Object>>} Resolves with the full list of module items,
+     *   or undefined if a request fails.
+     */
     async listModuleItems(url, items = []) {
         try {
             const res = await fetch(url);
@@ -97,11 +157,17 @@ class TMCanvasClient {
         }
     }
 
+    /**
+     * Extracts the "next" pagination link from a Canvas API response's
+     * Link header, per RFC 5988 link-header format.
+     *
+     * @param {Response} results - The fetch Response object to inspect.
+     * @returns {string|false} The next page's URL, or false if none exists.
+     */
     #findNextLink(results) {
         let responseHeaders = [...results.headers];
         let linkHeader = responseHeaders.find((el) => el[0].toLowerCase() === "link");
         let textArray = linkHeader[1].split(",");
-        // Go through and see if we find a next link
         for (const link of textArray) {
             let [url, rel] = link.split(";");
             if (rel.includes("next")) {
@@ -109,7 +175,7 @@ class TMCanvasClient {
                 return url.substring(1, url.length - 1);
             }
         }
-        return false; // No next-link was found.
+        return false;
     }
 
 }
