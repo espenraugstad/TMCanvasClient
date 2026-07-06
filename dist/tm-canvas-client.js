@@ -22,6 +22,44 @@ class TMCanvasClient {
     }
 
     /**
+     * Returns metadata about the course, including syllabus body (regardless of default view). 
+     * If the front page of the course is a wiki-page, also fetches and 
+     * appends the front page.
+     * @returns {Promise<Object>} Resolves to a Course object appended with
+     * front page info if available.
+     */
+    async getCourseInfo(){
+        try {
+            const res = await fetch(`${this.BASE_URL}/courses/${this.COURSE_ID}?include[]=syllabus_body`);
+            const data = await res.json();
+
+            if(data.default_view === "wiki"){
+                const frontPage = await this.getFrontPage();
+                data._front_page = frontPage;
+            }
+
+            return data;
+
+        } catch (err) {
+            console.error("Unable to get course info.", err);
+        }
+    }
+
+    /**
+     * Retrieves the frontpage of a course.
+     * @returns {Promise<Object>} Resolve with a page object, including the page body.
+     */
+    async getFrontPage(){
+        try {
+            const res = await fetch(`${this.BASE_URL}/courses/${this.COURSE_ID}/front_page`);
+            const data = await res.json();
+            return data;
+        } catch (err) {
+            console.error("Unable to fetch front page.", err);
+        }
+    }
+
+    /**
      * Recursively fetches all modules for the course, following Canvas'
      * paginated "next" links until no more pages remain.
      *
