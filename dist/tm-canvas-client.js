@@ -93,17 +93,23 @@ class TMCanvasClient {
     * Recursively fetches all pages for the course, following Canvas'
     * paginated "next" links until no more pages remain.
     *
+    * @param {Array<string>} [query=''] - Query parameters (see Canvas API documentation). inlude[]=body for body.
     * @param {string} [url=''] - The URL to fetch. Defaults to the course's
     *   modules endpoint; used internally for recursive pagination calls.
     * @param {Array<Object>} [pages=[]] - Accumulator of pages gathered
     *   so far across recursive calls.
-    * @returns {Promise<Array<Object>>} Resolves with the full list of modules,
+    * @returns {Promise<Array<Object>>} Resolves with the full list of pages,
     *   or undefined if a request fails.
     */
-    async listPages(url = '', pages = []) {
+    async listPages(query='', url = '', pages = []) {
         try {
             if (url === '') {
-                url = `${this.BASE_URL}/courses/${this.COURSE_ID}/pages`
+                if(query === ''){
+                    url = `${this.BASE_URL}/courses/${this.COURSE_ID}/pages`;
+                } else {
+                    url = `${this.BASE_URL}/courses/${this.COURSE_ID}/pages?${query.join('&')}`;
+                }
+                
             }
             const res = await fetch(url);
             const data = await res.json();
