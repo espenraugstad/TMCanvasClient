@@ -111,13 +111,12 @@ class TMCanvasClient {
                 }
                 
             }
-            console.log(url);
             const res = await fetch(url);
             const data = await res.json();
             pages = pages.concat(data);
             const nextLink = this.#findNextLink(res);
             if (nextLink) {
-                return await this.listPages(nextLink, pages);
+                return await this.listPages('', nextLink, pages);
             } else {
                 return pages;
             }
