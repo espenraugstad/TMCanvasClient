@@ -111,6 +111,7 @@ class TMCanvasClient {
                 }
                 
             }
+            console.log(url);
             const res = await fetch(url);
             const data = await res.json();
             pages = pages.concat(data);
